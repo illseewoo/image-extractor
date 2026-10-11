@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이미지 링크 추출기</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6fa;
+      --surface: #ffffff;
+      --border: #e2e4ea;
+      --primary: #5b6ef5;
+      --primary-hover: #4a5de4;
+      --primary-light: #eef0ff;
+      --text: #1a1a2e;
+      --text-secondary: #6b7280;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --error: #dc2626;
+      --error-bg: #fef2f2;
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 20px 60px;
+      min-height: 100vh;
+    }
+
+    .header {
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .how-to {
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #4a5de4;
+      line-height: 1.8;
+    }
+
+    .how-to strong {
+      font-weight: 700;
+    }
+
+    .base-url-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .base-url-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .base-url-input {
+      flex: 1;
+      padding: 7px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .base-url-input::placeholder {
+      color: #a0aec0;
+    }
+
+    .base-url-input:focus {
+      border-color: var(--primary);
+    }
+
+    .paste-area {
+      width: 100%;
+      height: 42px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 20px;
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .paste-area::placeholder {
+      color: #a0aec0;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    .paste-area:focus {
+      border-color: var(--primary);
+    }
+
+    .extract-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 16px;
+    }
+
+    .extract-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .status {
+      display: none;
+      padding: 11px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .status.error {
+      display: block;
+      background: var(--error-bg);
+      color: var(--error);
+    }
+
+    /* Controls */
+    .controls {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .controls.visible {
+      display: flex;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .selection-info-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .count-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .count-label strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .selection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .select-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-sm {
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+
+    .btn-sm:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* 마크다운 옵션 영역 (토글 스위치 & 커스텀 크기) */
+    .md-options-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .toggle-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      transition: 0.2s;
+      border-radius: 22px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(16px);
+    }
+
+    .size-input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .size-input {
+      width: 65px;
+      padding: 4px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      background: var(--surface);
+      transition: border-color 0.15s, opacity 0.15s;
+    }
+
+    .size-input:focus {
+      border-color: var(--primary);
+    }
+
+    .size-input:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-action {
+      padding: 6px 13px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-action.btn-outline {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-action.btn-outline:hover {
+      background: #f3f4f6;
+      color: var(--text);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--surface);
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-action.btn-primary:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-action.btn-dark {
+      background: #1a1a2e;
+      border: 1.5px solid #1a1a2e;
+      color: white;
+    }
+
+    .btn-action.btn-dark:hover {
+      background: #2d2d4e;
+      border-color: #2d2d4e;
+    }
+
+    /* 마크다운 출력 패널 */
+    .md-panel {
+      display: none;
+      margin-top: 14px;
+      background: #1a1a2e;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .md-panel.visible {
+      display: block;
+    }
+
+    .md-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .md-panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .md-panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .md-copy-inline {
+      padding: 4px 12px;
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .md-copy-inline:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .md-copy-inline.copied {
+      background: rgba(22, 163, 74, 0.5);
+    }
+
+    .md-textarea {
+      width: 100%;
+      min-height: 180px;
+      max-height: 400px;
+      padding: 14px;
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+
+    /* Grid */
+    .image-grid {
+      display: none;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .image-grid.visible {
+      display: grid;
+    }
+
+    /* Card */
+    .img-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: box-shadow 0.18s, transform 0.15s, border-color 0.18s;
+      position: relative;
+    }
+
+    .img-card:hover {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09);
+      transform: translateY(-1px);
+    }
+
+    .img-card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary), 0 4px 14px rgba(91, 110, 245, 0.18);
+    }
+
+    /* Tile */
+    .img-tile {
+      height: 140px;
+      display: block;
+      cursor: pointer;
+      transition: filter 0.15s;
+      position: relative;
+      overflow: hidden;
+      background-color: var(--border);
+      user-select: none;
+    }
+
+    .img-tile:hover {
+      filter: brightness(0.92);
+    }
+
+    .img-tile:hover .tile-hint {
+      opacity: 1;
+    }
+
+    /* 체크박스 */
+    .tile-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      z-index: 2;
+    }
+
+    .tile-checkbox svg {
+      width: 14px;
+      height: 14px;
+      stroke: white;
+      stroke-width: 2.5;
+      fill: none;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: all 0.15s;
+    }
+
+    .img-card.selected .tile-checkbox {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .img-card.selected .tile-checkbox svg {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .ext-badge {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: rgba(255, 255, 255, 0.95);
+      text-transform: uppercase;
+      position: absolute;
+      top: 8px;
+      left: 36px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 3px 6px;
+      border-radius: 6px;
+      line-height: 1;
+      z-index: 1;
+    }
+
+    .idx-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 10px;
+      z-index: 1;
+    }
+
+    .tile-hint {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.45);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      padding: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+
+    /* Card info */
+    .img-info {
+      padding: 10px 12px;
+    }
+
+    .img-caption {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.4;
+      word-break: break-word;
+      min-height: 18px;
+    }
+
+    .img-caption.empty {
+      font-size: 12px;
+      font-style: italic;
+      color: #a0aec0;
+      font-weight: 400;
+    }
+
+    /* URL 선택용 input */
+    .img-url-input {
+      width: 100%;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 7px;
+      margin-bottom: 7px;
+      cursor: text;
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: border-color 0.15s, background 0.15s;
+      box-sizing: border-box;
+    }
+
+    .img-url-input:focus {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .img-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .card-btn,
+    .open-link {
+      flex: 1;
+      padding: 5px 2px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      border: none;
+      transition: all 0.15s;
+      display: inline-block;
+      line-height: 1.6;
+      white-space: nowrap;
+    }
+
+    .card-btn {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .card-btn:hover {
+      background: #dde0ff;
+    }
+
+    .card-btn.secondary {
+      background: #f1f3f9;
+      color: #4b5563;
+    }
+
+    .card-btn.secondary:hover {
+      background: #e2e6f0;
+      color: var(--text);
+    }
+
+    .card-btn:disabled {
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .card-btn.copied {
+      background: var(--success-bg) !important;
+      color: var(--success) !important;
+    }
+
+    .open-link {
+      background: #f3f4f6;
+      color: var(--text-secondary);
+    }
+
+    .open-link:hover {
+      background: #e5e7eb;
+      color: var(--text);
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: none;
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state.visible {
+      display: block;
+    }
+
+    .empty-state .emoji {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .empty-state small {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #1a1a2e;
+      color: white;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.22s, transform 0.22s;
+      pointer-events: none;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>🖼️ 모든 이미지 추출기 (PNG, JPG, GIF, WebP, AVIF)</h1>
+    <p>붙여넣은 모든 텍스트 영역에서 PNG, JPG, JPEG, GIF, WebP, AVIF 형식의 이미지 URL을 추출합니다</p>
+  </div>
+
+  <div class="how-to">
+    <strong>사용법:</strong> 원하는 사이트에서 <strong>마우스 우클릭 → 페이지 소스 보기</strong> → 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 아래 창에 붙여넣기(Ctrl+V)<br>
+    💡 <strong>이미지 선택:</strong> 이미지를 클릭하거나 <strong>Shift 키를 누른 채 클릭</strong>하여 구간 일괄 선택이 가능합니다.
+  </div>
+
+  <div class="base-url-row">
+    <span class="base-url-label">사이트 주소 (선택)</span>
+    <input type="url" id="baseUrlInput" class="base-url-input" placeholder="https://example.com  (상대 경로를 절대 경로로 변환)" />
+  </div>
+
+  <textarea id="htmlSource" class="paste-area" placeholder="여기에 페이지 소스를 붙여넣으세요 (Ctrl+V)..."></textarea>
+
+  <button class="extract-btn" onclick="extractImages()">이미지 추출하기</button>
+
+  <div id="statusBox" class="status"></div>
+
+  <!-- 컨트롤 바 -->
+  <div id="controls" class="controls">
+    <!-- 1행: 선택 현황 및 선택 조작 -->
+    <div class="action-row">
+      <div class="selection-info-group">
+        <span class="count-label">전체 <strong id="countNum">0</strong>개 중</span>
+        <span class="selection-badge"><strong id="selectedNum">0</strong>개 선택됨</span>
+        <div class="select-actions">
+          <button class="btn-sm" onclick="selectAll()">전체 선택</button>
+          <button class="btn-sm" onclick="deselectAll()">선택 해제</button>
+        </div>
+      </div>
+
+      <!-- 복사 버튼 그룹 -->
+      <div class="btn-group">
+        <button class="btn-action btn-primary" onclick="copyUrls()" title="선택된 이미지 URL 복사 (선택 없으면 전체)">URL 복사</button>
+        <button class="btn-action btn-outline" onclick="copyCaptions()" title="선택된 이미지 캡션 복사 (선택 없으면 전체)">캡션 복사</button>
+        <button class="btn-action btn-outline" onclick="copyTsv()" title="URL과 캡션을 탭으로 구분해 복사 (엑셀용)">URL+캡션 (TSV)</button>
+        <button class="btn-action btn-dark" onclick="copyMdDirect()" title="설정된 마크다운 형식으로 클립보드 복사">마크다운 복사</button>
+        <button class="btn-action btn-outline" id="toggleMdPanelBtn" onclick="toggleMdPanel()">마크다운 미리보기</button>
+      </div>
+    </div>
+
+    <!-- 2행: 마크다운 크기 태그 설정 토글 & 커스텀 입력 -->
+    <div class="md-options-row">
+      <label class="toggle-wrapper" for="mdSizeToggle" title="마크다운에 ![700] 형태의 크기 지정 태그를 포함할지 선택합니다">
+        <div class="toggle-switch">
+          <input type="checkbox" id="mdSizeToggle" checked onchange="handleMdOptionChange()">
+          <span class="toggle-slider"></span>
+        </div>
+        <span>크기 태그(![크기]) 포함</span>
+      </label>
+
+      <div class="size-input-group">
+        <span>너비:</span>
+        <input type="number" id="mdSizeInput" class="size-input" value="700" min="1" max="9999" oninput="handleMdOptionChange()" placeholder="700">
+        <span>px</span>
+      </div>
+
+      <span style="font-size: 11px; color: var(--text-secondary);">
+        형식 미리보기: <code id="formatPreview" style="background:#e2e4ea; padding:2px 6px; border-radius:4px; font-weight:600; color:var(--text);">![700](URL)</code>
+      </span>
+    </div>
+  </div>
+
+  <!-- 마크다운 출력 패널 -->
+  <div id="mdPanel" class="md-panel">
+    <div class="md-panel-header">
+      <span class="md-panel-title" id="mdPanelTitle">마크다운 출력</span>
+      <div class="md-panel-actions">
+        <button class="md-copy-inline" id="mdCopyBtn" onclick="copyMdFromPanel()">복사</button>
+        <button class="md-copy-inline" onclick="toggleMdPanel()">닫기 ✕</button>
+      </div>
+    </div>
+    <textarea id="mdOutput" class="md-textarea" readonly></textarea>
+  </div>
+
+  <div id="imageGrid" class="image-grid"></div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="emoji">🔍</div>
+    <p>입력한 내용에서 PNG, JPG, GIF 이미지를 찾지 못했습니다</p>
+    <small>사이트 주소를 입력하면 상대 경로 이미지도 절대 경로로 변환됩니다</small>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let allImages = [];
+    let selectedIndices = new Set();
+    let lastSelectedIndex = null;
+
+    function extractImages() {
+      const html = document.getElementById('htmlSource').value.trim();
+      const baseUrl = document.getElementById('baseUrlInput').value.trim();
+      const statusBox = document.getElementById('statusBox');
+
+      statusBox.className = 'status';
+      document.getElementById('controls').classList.remove('visible');
+      document.getElementById('imageGrid').classList.remove('visible');
+      document.getElementById('emptyState').classList.remove('visible');
+      document.getElementById('mdPanel').classList.remove('visible');
+
+      if (!html) {
+        statusBox.className = 'status error';
+        statusBox.textContent = '페이지 소스를 먼저 붙여넣어 주세요.';
+        return;
+      }
+
+      allImages = parseImages(html, baseUrl);
+
+      if (allImages.length === 0) {
+        document.getElementById('emptyState').classList.add('visible');
+        return;
+      }
+
+      // 초기 추출 시 전체 이미지를 기본 선택 상태로 설정
+      selectedIndices = new Set(allImages.map((_, i) => i));
+      lastSelectedIndex = null;
+
+      renderControls();
+      renderImages();
+      updateSelectionUI();
+      updateFormatPreview();
+    }
+
+    function parseImages(html, baseUrl) {
+      const results = [];
+      const seen = new Set();
+
+      // 1. DOM 파싱을 통해 캡션 정보가 있는 이미지 우선 추출
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      const allEls = doc.querySelectorAll('*');
+      allEls.forEach(el => {
+        let urls = [];
+        let caption = '';
+
+        if (el.tagName === 'IMG') {
+          const src = el.getAttribute('src') || el.getAttribute('data-src') || '';
+          if (src) urls.push(src);
+
+          // 캡션 추출: alt 속성 -> title 속성 -> 부모 figure의 figcaption 순
+          caption = el.getAttribute('alt') || el.getAttribute('title') || '';
+          if (!caption) {
+            const figure = el.closest('figure');
+            if (figure) {
+              const fc = figure.querySelector('figcaption');
+              if (fc) caption = fc.textContent.trim();
+            }
+          }
+        } else {
+          // 인라인 스타일 배경 이미지 처리
+          const style = el.getAttribute('style') || '';
+          const bgRe = /background(?:-image)?\s*:[^;]*url\(\s*(['"]?)([^'")\s]+)\1\s*\)/gi;
+          let m;
+          while ((m = bgRe.exec(style)) !== null) {
+            if (m[2]) urls.push(m[2]);
+          }
+          if (urls.length > 0) {
+            caption = el.getAttribute('aria-label') || el.getAttribute('title') || '';
+          }
+        }
+
+        urls.forEach(rawUrl => {
+          rawUrl = rawUrl.replace(/[.,?!;]+$/, '');
+          const resolved = resolveUrl(rawUrl, baseUrl);
+          if (!resolved || seen.has(resolved)) return;
+
+          // 확장자 검사
+          const ext = getExt(resolved);
+          if (!['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'].includes(ext)) return;
+
+          seen.add(resolved);
+          results.push({ src: resolved, caption: caption.trim() });
+        });
+      });
+
+      // 2. 정규식: 남은 모든 텍스트 영역에서 누락된 이미지 URL 추가 추출 (캡션 없음)
+      const regex = /[^\s"'<>()[\]{},]+\.(?:jpg|jpeg|png|gif|webp|avif)(?:\?[^\s"'<>()[\]{},]*)?/gi;
+      let match;
+
+      while ((match = regex.exec(html)) !== null) {
+        let rawUrl = match[0];
+        rawUrl = rawUrl.replace(/[.,?!;]+$/, '');
+
+        const src = resolveUrl(rawUrl, baseUrl);
+        if (!src || seen.has(src)) continue;
+        seen.add(src);
+
+        results.push({ src, caption: '' });
+      }
+
+      return results;
+    }
+
+    function resolveUrl(src, baseUrl) {
+      if (!src) return '';
+      if (src.startsWith('data:')) return '';
+      src = src.trim();
+      if (src.startsWith('//')) src = 'https:' + src;
+      if (baseUrl) { try { return new URL(src, baseUrl).href; } catch { } }
+      return src;
+    }
+
+    function getExt(src) {
+      try {
+        const path = new URL(src).pathname;
+        const m = path.match(/\.(\w+)(\?|$)/);
+        return m ? m[1].toLowerCase() : '';
+      } catch {
+        const m = src.match(/\.(\w{2,5})(\?|$)/);
+        return m ? m[1].toLowerCase() : '';
+      }
+    }
+
+    function renderControls() {
+      document.getElementById('countNum').textContent = allImages.length;
+      document.getElementById('controls').classList.add('visible');
+    }
+
+    function renderImages() {
+      const grid = document.getElementById('imageGrid');
+
+      grid.innerHTML = allImages.map((img, i) => {
+        const ext = getExt(img.src);
+        const safeId = 'cb' + i;
+        const isSelected = selectedIndices.has(i);
+        const captionHtml = img.caption
+          ? `<div class="img-caption" id="caption-text-${i}">${escHtml(img.caption)}</div>`
+          : `<div class="img-caption empty" id="caption-text-${i}">캡션 없음</div>`;
+
+        return `
+          <div class="img-card ${isSelected ? 'selected' : ''}" id="card-${i}">
+            <div class="img-tile" onclick="handleTileClick(${i}, event)"
+                 style="background-image: url('${escAttr(img.src)}'); background-size: cover; background-position: center;"
+                 title="클릭하여 선택/해제 (Shift+클릭으로 연속 선택)">
+              <div class="tile-checkbox" title="선택 상태">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              ${ext ? `<span class="ext-badge">${escHtml(ext)}</span>` : ''}
+              <div class="idx-badge">${i + 1}</div>
+              <div class="tile-hint">클릭하여 선택/해제 (Shift 다중 선택)</div>
+            </div>
+            <div class="img-info">
+              ${captionHtml}
+              <input class="img-url-input" type="text" readonly
+                id="${safeId}-input"
+                value="${escAttr(img.src)}"
+                onclick="this.select()"
+                title="클릭하면 전체 선택됩니다">
+              <div class="img-actions">
+                <button class="card-btn" id="${safeId}-url-btn"
+                  onclick="copySingleUrl(${i}, this)">URL 복사</button>
+                <button class="card-btn secondary" id="${safeId}-cap-btn"
+                  onclick="copySingleCaption(${i}, this)"
+                  ${!img.caption ? 'disabled title="복사할 캡션이 없습니다"' : ''}>캡션 복사</button>
+                <a class="open-link" href="${escAttr(img.src)}" target="_blank" rel="noopener">열기 ↗</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      grid.classList.add('visible');
+    }
+
+    // Shift 키 범위 선택 및 단일 클릭 토글
+    function handleTileClick(index, event) {
+      if (event.shiftKey && lastSelectedIndex !== null && lastSelectedIndex !== index) {
+        // Shift 키를 누른 채 클릭한 경우 범위 선택
+        const start = Math.min(lastSelectedIndex, index);
+        const end = Math.max(lastSelectedIndex, index);
+        // 대상 상태 결정: 현재 클릭한 항목을 선택 상태로 만들며 범위 전체 동기화
+        const shouldSelect = !selectedIndices.has(index);
+
+        for (let i = start; i <= end; i++) {
+          if (shouldSelect) {
+            selectedIndices.add(i);
+          } else {
+            selectedIndices.delete(i);
+          }
+        }
+      } else {
+        // 일반 클릭 토글
+        if (selectedIndices.has(index)) {
+          selectedIndices.delete(index);
+        } else {
+          selectedIndices.add(index);
+        }
+        lastSelectedIndex = index;
+      }
+
+      updateSelectionUI();
+    }
+
+    function selectAll() {
+      selectedIndices = new Set(allImages.map((_, i) => i));
+      lastSelectedIndex = null;
+      updateSelectionUI();
+      showToast(`전체 ${allImages.length}개 이미지가 선택되었습니다`);
+    }
+
+    function deselectAll() {
+      selectedIndices.clear();
+      lastSelectedIndex = null;
+      updateSelectionUI();
+      showToast('선택이 모두 해제되었습니다');
+    }
+
+    function updateSelectionUI() {
+      const selectedCount = selectedIndices.size;
+      document.getElementById('selectedNum').textContent = selectedCount;
+
+      allImages.forEach((_, i) => {
+        const card = document.getElementById(`card-${i}`);
+        if (!card) return;
+        if (selectedIndices.has(i)) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      });
+
+      // 마크다운 패널이 열려있다면 내용 실시간 갱신
+      const mdPanel = document.getElementById('mdPanel');
+      if (mdPanel && mdPanel.classList.contains('visible')) {
+        document.getElementById('mdOutput').value = buildMdText();
+      }
+    }
+
+    // 마크다운 크기 옵션 변경 처리
+    function handleMdOptionChange() {
+      const toggle = document.getElementById('mdSizeToggle');
+      const sizeInput = document.getElementById('mdSizeInput');
+      sizeInput.disabled = !toggle.checked;
+
+      updateFormatPreview();
+
+      const mdPanel = document.getElementById('mdPanel');
+      if (mdPanel && mdPanel.classList.contains('visible')) {
+        document.getElementById('mdOutput').value = buildMdText();
+      }
+    }
+
+    function updateFormatPreview() {
+      const toggle = document.getElementById('mdSizeToggle');
+      const sizeInput = document.getElementById('mdSizeInput');
+      const previewEl = document.getElementById('formatPreview');
+      const size = sizeInput.value.trim() || '700';
+
+      if (toggle.checked) {
+        previewEl.textContent = `![${size}](URL)`;
+      } else {
+        previewEl.textContent = `![](URL)`;
+      }
+    }
+
+    // 복사 대상 결정 (선택된 항목이 있으면 선택된 항목, 없으면 전체 항목 대상)
+    function getTargetItems() {
+      if (selectedIndices.size > 0) {
+        return allImages.filter((_, i) => selectedIndices.has(i));
+      }
+      return allImages;
+    }
+
+    function isFiltered() {
+      return selectedIndices.size > 0 && selectedIndices.size < allImages.length;
+    }
+
+    // 1. URL 복사 (선택된 항목 / 전체)
+    function copyUrls() {
+      const targets = getTargetItems();
+      if (!targets.length) {
+        showToast('복사할 이미지가 없습니다');
+        return;
+      }
+      const text = targets.map(i => i.src).join('\n');
+      copyText(
+        text,
+        () => showToast(`${targets.length}개 URL 복사 완료 ✓`),
+        () => showToast('클립보드 복사 실패')
+      );
+    }
+
+    // 2. 캡션 복사 (선택된 항목 / 전체)
+    function copyCaptions() {
+      const targets = getTargetItems();
+      if (!targets.length) {
+        showToast('선택된 이미지가 없습니다');
+        return;
+      }
+
+      // 캡션이 있는 항목만 추출
+      const captions = targets
+        .map(i => (i.caption || '').trim())
+        .filter(c => c.length > 0);
+
+      if (captions.length === 0) {
+        showToast('선택된 이미지에 캡션이 없습니다');
+        return;
+      }
+
+      const text = captions.join('\n');
+      copyText(
+        text,
+        () => showToast(`${captions.length}개 캡션 복사 완료 ✓`),
+        () => showToast('클립보드 복사 실패')
+      );
+    }
+
+    // 3. TSV 복사 (URL + 캡션)
+    function copyTsv() {
+      const targets = getTargetItems();
+      if (!targets.length) return;
+      const tsv = targets.map((img, idx) =>
+        `${idx + 1}\t${img.caption || ''}\t${img.src}`
+      ).join('\n');
+      copyText(
+        tsv,
+        () => showToast(`${targets.length}개 URL+캡션 복사 완료 ✓`),
+        () => showToast('클립보드 복사 실패')
+      );
+    }
+
+    // 4. 마크다운 생성 로직
+    function buildMdText() {
+      const targets = getTargetItems();
+      const useSize = document.getElementById('mdSizeToggle').checked;
+      const sizeVal = document.getElementById('mdSizeInput').value.trim() || '700';
+
+      return targets.map(img => {
+        const prefix = useSize ? `![${sizeVal}]` : `![]`;
+        const line1 = `${prefix}(${img.src})`;
+        const line2 = img.caption || '';
+        return line2 ? `${line1}\n\n${line2}` : line1;
+      }).join('\n\n');
+    }
+
+    // 마크다운 직접 복사
+    function copyMdDirect() {
+      const targets = getTargetItems();
+      if (!targets.length) {
+        showToast('복사할 이미지가 없습니다');
+        return;
+      }
+      const md = buildMdText();
+      copyText(
+        md,
+        () => showToast(`${targets.length}개 마크다운 복사 완료 ✓`),
+        () => showToast('클립보드 복사 실패')
+      );
+    }
+
+    // 마크다운 패널 토글
+    function toggleMdPanel() {
+      const panel = document.getElementById('mdPanel');
+      const btn = document.getElementById('toggleMdPanelBtn');
+      if (panel.classList.contains('visible')) {
+        panel.classList.remove('visible');
+        btn.textContent = '마크다운 미리보기';
+      } else {
+        const ta = document.getElementById('mdOutput');
+        ta.value = buildMdText();
+        panel.classList.add('visible');
+        btn.textContent = '미리보기 닫기';
+        setTimeout(() => { ta.focus(); ta.select(); }, 50);
+      }
+    }
+
+    function copyMdFromPanel() {
+      const ta = document.getElementById('mdOutput');
+      const btn = document.getElementById('mdCopyBtn');
+      copyText(
+        ta.value,
+        () => showBtnSuccess(btn),
+        () => {
+          ta.focus(); ta.select();
+          showToast('텍스트가 선택됐습니다 — Ctrl+C 로 복사해 주세요');
+        }
+      );
+    }
+
+    // 개별 URL 복사
+    function copySingleUrl(index, btn) {
+      const img = allImages[index];
+      if (!img) return;
+      copyText(
+        img.src,
+        () => showBtnSuccess(btn, 'URL 복사'),
+        () => showToast('URL 복사 실패')
+      );
+    }
+
+    // 개별 캡션 복사
+    function copySingleCaption(index, btn) {
+      const img = allImages[index];
+      if (!img || !img.caption) return;
+      copyText(
+        img.caption,
+        () => showBtnSuccess(btn, '캡션 복사'),
+        () => showToast('캡션 복사 실패')
+      );
+    }
+
+    function showBtnSuccess(btn, origText) {
+      const orig = origText || btn.textContent;
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1600);
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function escAttr(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // 복사 공통 함수
+    function copyText(text, onSuccess, onFail) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { }
+      document.body.removeChild(ta);
+
+      if (ok) {
+        onSuccess();
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+        return;
+      }
+      onFail();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2300);
+    }
+  </script>
+</body>
+
+</html>
