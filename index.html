@@ -299,11 +299,11 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
-    .toggle-switch input:checked + .toggle-slider {
+    .toggle-switch input:checked+.toggle-slider {
       background-color: var(--primary);
     }
 
-    .toggle-switch input:checked + .toggle-slider:before {
+    .toggle-switch input:checked+.toggle-slider:before {
       transform: translateX(16px);
     }
 
@@ -769,7 +769,8 @@
   </div>
 
   <div class="how-to">
-    <strong>사용법:</strong> 원하는 사이트에서 <strong>마우스 우클릭 → 페이지 소스 보기</strong> → 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 아래 창에 붙여넣기(Ctrl+V)<br>
+    <strong>사용법:</strong> 원하는 사이트에서 <strong>마우스 우클릭 → 페이지 소스 보기</strong> → 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 아래 창에
+    붙여넣기(Ctrl+V)<br>
     💡 <strong>이미지 선택:</strong> 이미지를 클릭하거나 <strong>Shift 키를 누른 채 클릭</strong>하여 구간 일괄 선택이 가능합니다.
   </div>
 
@@ -801,7 +802,8 @@
       <div class="btn-group">
         <button class="btn-action btn-primary" onclick="copyUrls()" title="선택된 이미지 URL 복사 (선택 없으면 전체)">URL 복사</button>
         <button class="btn-action btn-outline" onclick="copyCaptions()" title="선택된 이미지 캡션 복사 (선택 없으면 전체)">캡션 복사</button>
-        <button class="btn-action btn-outline" onclick="copyTsv()" title="URL과 캡션을 탭으로 구분해 복사 (엑셀용)">URL+캡션 (TSV)</button>
+        <button class="btn-action btn-outline" onclick="copyTsv()" title="URL과 캡션을 탭으로 구분해 복사 (엑셀용)">URL+캡션
+          (TSV)</button>
         <button class="btn-action btn-dark" onclick="copyMdDirect()" title="설정된 마크다운 형식으로 클립보드 복사">마크다운 복사</button>
         <button class="btn-action btn-outline" id="toggleMdPanelBtn" onclick="toggleMdPanel()">마크다운 미리보기</button>
       </div>
@@ -819,12 +821,14 @@
 
       <div class="size-input-group">
         <span>너비:</span>
-        <input type="number" id="mdSizeInput" class="size-input" value="700" min="1" max="9999" oninput="handleMdOptionChange()" placeholder="700">
+        <input type="number" id="mdSizeInput" class="size-input" value="700" min="1" max="9999"
+          oninput="handleMdOptionChange()" placeholder="700">
         <span>px</span>
       </div>
 
       <span style="font-size: 11px; color: var(--text-secondary);">
-        형식 미리보기: <code id="formatPreview" style="background:#e2e4ea; padding:2px 6px; border-radius:4px; font-weight:600; color:var(--text);">![700](URL)</code>
+        형식 미리보기: <code id="formatPreview"
+          style="background:#e2e4ea; padding:2px 6px; border-radius:4px; font-weight:600; color:var(--text);">![700](URL)</code>
       </span>
     </div>
   </div>
