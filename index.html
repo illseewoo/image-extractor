@@ -908,16 +908,36 @@
         let caption = '';
 
         if (el.tagName === 'IMG') {
-          const src = el.getAttribute('src') || el.getAttribute('data-src') || '';
-          if (src) urls.push(src);
+          // data-original-src, data-original, data-src, src 순으로 원본 이미지 후보 추출
+          const candidates = [
+            el.getAttribute('data-original-src'),
+            el.getAttribute('data-original'),
+            el.getAttribute('data-src'),
+            el.getAttribute('src'),
+            el.getAttribute('data-url')
+          ].filter(Boolean);
 
-          // 캡션 추출: alt 속성 -> title 속성 -> 부모 figure의 figcaption 순
-          caption = el.getAttribute('alt') || el.getAttribute('title') || '';
+          for (let cand of candidates) {
+            const unwrapped = unwrapProxyUrl(cand);
+            if (unwrapped && !urls.includes(unwrapped)) {
+              urls.push(unwrapped);
+            }
+          }
+
+          // 캡션 추출: alt 속성 -> title 속성 -> 부모 figure의 figcaption -> 인접 figcaption/caption 순
+          caption = (el.getAttribute('alt') || '').trim();
+          if (!caption) caption = (el.getAttribute('title') || '').trim();
           if (!caption) {
             const figure = el.closest('figure');
             if (figure) {
               const fc = figure.querySelector('figcaption');
               if (fc) caption = fc.textContent.trim();
+            }
+          }
+          if (!caption) {
+            const next = el.nextElementSibling;
+            if (next && (next.tagName === 'FIGCAPTION' || next.classList?.contains('caption') || next.classList?.contains('img-caption'))) {
+              caption = next.textContent.trim();
             }
           }
         } else {
@@ -957,18 +977,36 @@
 
         const src = resolveUrl(rawUrl, baseUrl);
         if (!src || seen.has(src)) continue;
-        seen.add(src);
 
+        const ext = getExt(src);
+        if (!['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'].includes(ext)) continue;
+
+        seen.add(src);
         results.push({ src, caption: '' });
       }
 
       return results;
     }
 
+    function unwrapProxyUrl(src) {
+      if (!src) return '';
+      try {
+        // Next.js (/_next/image?url=...), 이미지 CDN 프록시 등의 쿼리 파라미터에서 원본 이미지 추출
+        const parsed = new URL(src, 'https://dummy.base');
+        if (parsed.searchParams.has('url')) {
+          const innerUrl = parsed.searchParams.get('url');
+          if (innerUrl && (innerUrl.startsWith('http://') || innerUrl.startsWith('https://') || innerUrl.startsWith('/'))) {
+            return innerUrl;
+          }
+        }
+      } catch { }
+      return src;
+    }
+
     function resolveUrl(src, baseUrl) {
       if (!src) return '';
       if (src.startsWith('data:')) return '';
-      src = src.trim();
+      src = unwrapProxyUrl(src.trim());
       if (src.startsWith('//')) src = 'https:' + src;
       if (baseUrl) { try { return new URL(src, baseUrl).href; } catch { } }
       return src;
@@ -976,11 +1014,14 @@
 
     function getExt(src) {
       try {
-        const path = new URL(src).pathname;
-        const m = path.match(/\.(\w+)(\?|$)/);
-        return m ? m[1].toLowerCase() : '';
+        const actual = unwrapProxyUrl(src);
+        const path = new URL(actual, 'https://dummy.base').pathname;
+        const m = path.match(/\.([a-zA-Z0-9]+)$/);
+        if (m) return m[1].toLowerCase();
+        const m2 = actual.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
+        return m2 ? m2[1].toLowerCase() : '';
       } catch {
-        const m = src.match(/\.(\w{2,5})(\?|$)/);
+        const m = src.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
         return m ? m[1].toLowerCase() : '';
       }
     }
